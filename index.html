@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>空席カレンダーメーカー</title>
+    <link rel="icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500&family=Sawarabi+Mincho&family=Zen+Kurenaido&family=Hina+Mincho&display=swap" rel="stylesheet">
@@ -172,9 +175,23 @@
         #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
         #result-img { max-width: 90%; max-height: 80%; border-radius: 8px; }
         .no-export { visibility: hidden !important; }
+
+        /* ========== 左上ヘルプ・更新ボタン ========== */
+        #info-buttons { position: fixed; top: 10px; left: 10px; z-index: 100; display: flex; gap: 6px; }
+        #info-buttons button { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--main-color); background: #fff; color: var(--main-color); font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        #info-modal .info-box { background: #fff; border-radius: 12px; max-width: 340px; width: 100%; max-height: 80%; overflow: auto; padding: 20px; }
+        #info-modal .info-box h3 { margin: 0 0 12px 0; font-size: 16px; color: var(--main-color); }
+        #info-modal .info-box pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 13px; line-height: 1.5; margin: 0; color: #333; }
+        #info-modal .info-close { margin-top: 14px; padding: 10px 20px; background: var(--main-color); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body class="style-cute has-border">
+
+    <div id="info-buttons">
+        <button type="button" onclick="openInfoModal('release')" title="最新の更新内容">!</button>
+        <button type="button" onclick="openInfoModal('usage')" title="使い方">?</button>
+    </div>
 
     <div id="capture-area">
         <div id="logo-container"><img id="logo-preview" src=""></div>
@@ -203,7 +220,7 @@
             <label><input type="checkbox" value="6" class="day-check">土</label>
         </div>
         <textarea id="input-comment" placeholder="画像内の一言コメント(2行までを推奨)" oninput="updateComment()"></textarea>
-        <textarea id="sns-text" placeholder="Instagram用文章" oninput="saveSnsText()"></textarea>
+        <textarea id="sns-text" placeholder="投稿用文章" oninput="saveSnsText()"></textarea>
         <div class="btn-group">
             <button onclick="openPreviewModal()" style="background:var(--main-color); color:white; font-weight:bold; border:none;">① 画像確認</button>
             <button onclick="shareImageAndCopy()" style="background:#E1306C; color:white; border:none; font-weight:bold;">② 画像を共有メニューへ</button>
@@ -250,7 +267,28 @@
         <img id="result-img" src="" onclick="event.stopPropagation()">
     </div>
 
+    <div id="info-modal" onclick="closeInfoModal(event)">
+        <div class="info-box" onclick="event.stopPropagation()">
+            <h3 id="info-title"></h3>
+            <pre id="info-body"></pre>
+            <button type="button" class="info-close" onclick="closeInfoModal()">閉じる</button>
+        </div>
+    </div>
+
     <script>
+        // ========== バージョン管理・更新内容 ==========
+        const APP_VERSION = '1.3.0'; // 次回更新時にここを '1.4' に変える
+        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！';
+        const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
+
+        (function checkVersion() {
+            const lastSeen = localStorage.getItem('app_version');
+            if (lastSeen !== APP_VERSION) {
+                alert(RELEASE_NOTES);
+                localStorage.setItem('app_version', APP_VERSION);
+            }
+        })();
+
         // ========== 定数・グローバル状態 ==========
         const holidays2026 = {"1-1":"元日","1-12":"成人の日","2-11":"建国記念の日","2-23":"天皇誕生日","3-20":"春分の日","4-29":"昭和の日","5-3":"憲法記念日","5-4":"みどりの日","5-5":"こどもの日","5-6":"振替休日","7-20":"海の日","8-11":"山の日","9-21":"敬老の日","9-22":"秋分の日","10-12":"スポーツの日","11-3":"文化の日","11-23":"勤労感謝の日"};
         let currentNavDate = new Date();
@@ -389,31 +427,40 @@
             parent.appendChild(cell);
         }
 
-        /* キャプチャ直前に計算済みの色をインライン化し、html2canvas の色ズレを防ぐ */
+        /* キャプチャ直前に計算済みの色・枠をインライン化し、html2canvas の描画ズレを防ぐ */
         function applyInlineColorsForCapture() {
             const area = document.getElementById('capture-area');
             const saved = [];
             function stash(el, prop) {
-                saved.push({ el, prop, value: el.style[prop] });
-                el.style[prop] = getComputedStyle(el)[prop] || '';
+                const computed = getComputedStyle(el)[prop];
+                if (computed === undefined) return;
+                saved.push({ el, prop, value: el.style[prop] || '' });
+                el.style[prop] = computed;
             }
             stash(area, 'backgroundColor');
+            stash(area, 'borderWidth');
+            stash(area, 'borderStyle');
             stash(area, 'borderColor');
+            stash(area, 'borderRadius');
+            stash(area, 'boxShadow');
+            stash(area, 'padding');
             area.querySelectorAll('.nav-btn, h2, .status, .legend, .powered').forEach(el => {
                 stash(el, 'color');
             });
             return saved;
         }
         function removeInlineColorsForCapture(saved) {
-            saved.forEach(({ el, prop, value }) => { el.style[prop] = value || ''; });
+            saved.forEach(({ el, prop, value }) => { el.style[prop] = value; });
         }
 
         // ========== 画像プレビュー（モーダル） ==========
         async function openPreviewModal() {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('no-export'));
             const savedStyles = applyInlineColorsForCapture();
+            const area = document.getElementById('capture-area');
+            const bgColor = getComputedStyle(area).backgroundColor;
             try {
-                const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
+                const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: bgColor || null });
                 document.getElementById('result-img').src = canvas.toDataURL("image/png");
                 document.getElementById('result-modal').style.display = 'flex';
             } finally {
@@ -427,6 +474,24 @@
             document.getElementById('result-modal').style.display = 'none';
         }
 
+        function openInfoModal(type) {
+            const modal = document.getElementById('info-modal');
+            const title = document.getElementById('info-title');
+            const body = document.getElementById('info-body');
+            if (type === 'release') {
+                title.textContent = '更新内容';
+                body.textContent = RELEASE_NOTES;
+            } else {
+                title.textContent = '使い方';
+                body.textContent = USAGE_GUIDE;
+            }
+            modal.style.display = 'flex';
+        }
+        function closeInfoModal(ev) {
+            if (ev && ev.target.closest('.info-box') && !ev.target.classList.contains('info-close')) return;
+            document.getElementById('info-modal').style.display = 'none';
+        }
+
         // ========== 共有（Web Share API）とテキストコピー ==========
         async function shareImageAndCopy() {
             const snsText = document.getElementById('sns-text').value;
@@ -436,9 +501,11 @@
 
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('no-export'));
             const savedStyles = applyInlineColorsForCapture();
+            const areaForShare = document.getElementById('capture-area');
+            const bgColorShare = getComputedStyle(areaForShare).backgroundColor;
             let canvas;
             try {
-                canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
+                canvas = await html2canvas(areaForShare, { scale: 3, useCORS: true, backgroundColor: bgColorShare || null });
             } finally {
                 removeInlineColorsForCapture(savedStyles);
             }
