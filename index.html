@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>空席カレンダーメーカー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500&family=Sawarabi+Mincho&family=Zen+Kurenaido&family=Hina+Mincho&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* ========== 変数・リセット ========== */
+        :root { --main-color: #2c3e50; --accent-red: #e74c3c; --bg-ui: #ccd1d1; }
+        * { touch-action: manipulation; box-sizing: border-box; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: var(--bg-ui); padding: 10px; margin: 0; }
+
+        /* ========== キャプチャエリア（画像化される枠） ========== */
+        #capture-area {
+            background: #ffffff;
+            padding: 25px;
+            width: 360px;
+            height: 450px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* ---------- 枠あり：スタイルごとに太さ・形を変更 ---------- */
+        .has-border #capture-area { border: 12px solid var(--main-color); }
+        .style-cute.has-border #capture-area { border: 6px dotted var(--main-color); border-radius: 10px; }
+        .style-cool.has-border #capture-area {
+            border: 18px solid var(--main-color);
+            align-items: center;
+        }
+        .style-cool.has-border #capture-area .header-controls,
+        .style-cool.has-border #capture-area .grid,
+        .style-cool.has-border #capture-area .comment-area {
+            width: 100%;
+            max-width: 100%;
+        }
+        .style-styled.has-border #capture-area { border: 2px solid var(--main-color); padding: 35px 25px; box-shadow: inset 0 0 40px rgba(0,0,0,0.03); }
+        .style-natural.has-border #capture-area { border: 2px solid #7a8a7a; border-radius: 10px; }
+        .style-luxury.has-border #capture-area { border: 3px solid #b8860b; box-shadow: inset 0 0 0 1px rgba(184,134,11,0.25); }
+        .style-pop.has-border #capture-area { border: 6px solid var(--main-color); border-radius: 16px; }
+
+        /* ========== スタイル：Cute（かわいい・丸文字） ========== */
+        .style-cute #capture-area {
+            background: #fffafb;
+            font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+            letter-spacing: 0.03em;
+        }
+
+        /* ========== スタイル：Cool（クール・太字インパクト） ========== */
+        .style-cool #capture-area {
+            background: #ffffff;
+            font-family: "Noto Sans JP", sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        /* ========== スタイル：Styled（おしゃれ・上品な明朝） ========== */
+        .style-styled #capture-area {
+            background: #fdfaf5;
+            font-family: "Shippori Mincho", "Yu Mincho", serif;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+        }
+
+        /* ========== スタイル：Natural（北欧風・ZEN紅道） ========== */
+        .style-natural #capture-area {
+            background: #f5f2ee;
+            font-family: "Zen Kurenaido", "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+            letter-spacing: 0.04em;
+            padding: 28px 22px;
+            border-left: 4px solid #8b9a8a;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .style-natural #capture-area .day-label { font-weight: 500; color: #5c5c5c; }
+        .style-natural #capture-area .legend { color: #6b6b6b; border-top-color: #ddd; }
+        .style-natural #capture-area .comment-area { border-top-color: #ddd; }
+
+        /* ========== スタイル：Luxury（高級感・ひな明朝） ========== */
+        .style-luxury #capture-area {
+            background: #faf9f6;
+            font-family: "Hina Mincho", "Sawarabi Mincho", "Shippori Mincho", "Yu Mincho", serif;
+            letter-spacing: 0.08em;
+            padding: 30px 24px;
+        }
+        .style-luxury #capture-area .header-controls { border-bottom: 1px solid var(--main-color); padding-bottom: 12px; margin-bottom: 12px; }
+        .style-luxury #capture-area .day-label { font-weight: 600; }
+        .style-luxury #capture-area .legend {
+            font-size: 8px;
+            letter-spacing: 0.1em;
+            color: var(--main-color);
+            border-top: 1px solid rgba(0,0,0,0.12);
+            padding-top: 10px;
+            margin-top: 4px;
+        }
+        .style-luxury #capture-area .powered { color: var(--main-color); opacity: 0.7; }
+        .style-luxury #capture-area .status,
+        .style-luxury #capture-area h2 { color: var(--main-color); }
+
+        /* ========== スタイル：Pop（ポップ・ニコモジ風） ========== */
+        .style-pop #capture-area {
+            background: #fff8f0;
+            font-family: "Nikomoji", "ニコモジ", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+            letter-spacing: 0.02em;
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        .style-pop #capture-area .day-label { font-weight: 700; }
+        .style-pop #capture-area .legend {
+            font-weight: 700;
+            border-top: 2px dashed rgba(0,0,0,0.15);
+            padding-top: 8px;
+            letter-spacing: 0.05em;
+        }
+        .style-pop #capture-area .comment-area { border-top: 2px dashed rgba(0,0,0,0.1); }
+
+        #logo-container { width: 60px; height: 60px; position: absolute; top: 15px; right: 15px; display: flex; align-items: center; justify-content: center; z-index: 1; }
+        #logo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
+        
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; width: 100%; height: 30px; position: relative; }
+        .nav-btn { background: rgba(0,0,0,0.05); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--main-color); font-weight: bold; z-index: 10; display: flex; align-items: center; justify-content: center; }
+        h2 { margin: 0; color: var(--main-color); font-size: 1.2rem; text-align: center; width: 100%; position: absolute; left: 0; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; width: 100%; }
+        .day-label { font-weight: bold; text-align: center; font-size: 11px; padding: 5px 0; }
+        .cell { aspect-ratio: 1.1 / 1; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .date-num { font-size: 10px; position: absolute; top: 4px; left: 6px; color: #aaa; }
+        .status { font-size: 22px; font-weight: bold; color: var(--main-color); z-index: 2; margin-top: 5px; }
+        .is-sun, .is-holiday { color: var(--accent-red) !important; }
+
+        /* コメントエリア：可変・溢れたらスクロール。凡例は常に最下部に固定 */
+        .comment-area {
+            margin-top: 5px;
+            font-size: 13px;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: pre-wrap;
+            padding: 5px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .legend-wrap { flex-shrink: 0; margin-top: auto; }
+        .legend { font-size: 9px; border-top: 1px dashed #ccc; padding-top: 8px; display: flex; justify-content: space-between; font-weight: bold; color: #666; }
+        .powered { text-align: right; font-size: 9px; color: #bbb; margin-top: 5px; }
+
+        /* ========== 操作UI（キャプチャエリア外） ========== */
+        .controls { margin-top: 20px; background: white; padding: 15px; border-radius: 12px; width: 360px; display: grid; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        button, select, textarea { flex: 1; padding: 12px; font-size: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; }
+        button.active { background: var(--main-color); color: white; border-color: var(--main-color); }
+        textarea { height: 50px; resize: none; flex: none; width: 100%; }
+        .holiday-settings { font-size: 11px; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid var(--main-color); }
+        .color-btns { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; align-items: center; flex-wrap: wrap; }
+        .color-dot { min-width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.2); flex-shrink: 0; cursor: pointer; }
+        .color-custom-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .color-custom-wrap input[type="color"] { width: 32px; height: 32px; padding: 0; border: 2px solid #fff; border-radius: 50%; cursor: pointer; background: transparent; }
+        .color-custom-wrap label { font-size: 10px; color: #666; }
+        /* ========== 画像プレビュー用モーダル ========== */
+        #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
+        #result-img { max-width: 90%; max-height: 80%; border-radius: 8px; }
+        .no-export { visibility: hidden !important; }
+    </style>
+</head>
+<body class="style-cute has-border">
+
+    <div id="capture-area">
+        <div id="logo-container"><img id="logo-preview" src=""></div>
+        <div class="header-controls">
+            <button class="nav-btn" onclick="moveNav(-1)">◀</button>
+            <h2 id="calendar-title"></h2>
+            <button class="nav-btn" onclick="moveNav(1)">▶</button>
+        </div>
+        <div id="calendar-grid" class="grid"></div>
+        <div class="comment-area" id="display-comment"></div>
+        <div class="legend-wrap">
+            <div class="legend"><span>◎:貸切OK</span><span>〇:空席あり</span><span>△:残り僅か</span><span>×:満席</span></div>
+            <div class="powered">Powered by U</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="holiday-settings">
+            <b>定休日を一括設定:</b><br>
+            <label><input type="checkbox" value="0" class="day-check">日</label>
+            <label><input type="checkbox" value="1" class="day-check">月</label>
+            <label><input type="checkbox" value="2" class="day-check">火</label>
+            <label><input type="checkbox" value="3" class="day-check">水</label>
+            <label><input type="checkbox" value="4" class="day-check">木</label>
+            <label><input type="checkbox" value="5" class="day-check">金</label>
+            <label><input type="checkbox" value="6" class="day-check">土</label>
+        </div>
+        <textarea id="input-comment" placeholder="画像内の一言コメント(2行までを推奨)" oninput="updateComment()"></textarea>
+        <textarea id="sns-text" placeholder="Instagram用文章" oninput="saveSnsText()"></textarea>
+        <div class="btn-group">
+            <button onclick="openPreviewModal()" style="background:var(--main-color); color:white; font-weight:bold; border:none;">① 画像確認</button>
+            <button onclick="shareImageAndCopy()" style="background:#E1306C; color:white; border:none; font-weight:bold;">② 画像を共有メニューへ</button>
+        </div>
+        <div class="btn-group">
+            <button id="btn-month" onclick="switchView('month')">月間</button>
+            <button id="btn-week" onclick="switchView('week')">週間</button>
+            <button id="btn-border" onclick="toggleBorder()">枠あり</button>
+        </div>
+        <div class="btn-group">
+            <button onclick="document.getElementById('logo-input').click()">ロゴ選択</button>
+            <input type="file" id="logo-input" hidden accept="image/*" onchange="handleLogoUpload(this)">
+            <select onchange="changeStyle(this.value)" id="select-style">
+                <option value="cute">かわいい</option>
+                <option value="cool">クール</option>
+                <option value="styled">おしゃれ</option>
+                <option value="natural">北欧風</option>
+                <option value="luxury">高級感</option>
+                <option value="pop">ポップ</option>
+            </select>
+        </div>
+        <div class="color-btns" id="color-palette">
+            <div class="color-custom-wrap" title="自由に色を選択">
+                <input type="color" id="custom-color" value="#2c3e50" title="カスタム色">
+                <label for="custom-color">自由色</label>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button onclick="resetCurrentPeriod()" style="color:#e74c3c; border:1px solid #e74c3c; background:none; font-size:11px;">表示中の月/週をリセット</button>
+        </div>
+        <div class="btn-group">
+            <button onclick="exportData()" style="font-size:11px;">データ書き出し（コピー）</button>
+            <button onclick="document.getElementById('import-area').style.display='block'; document.getElementById('import-text').focus();" style="font-size:11px;">データ読み込み</button>
+        </div>
+        <div id="import-area" style="display:none;">
+            <textarea id="import-text" placeholder="書き出したテキストを貼り付けてください" style="height:60px; font-size:11px;"></textarea>
+            <button onclick="importData()" style="font-size:11px;">復元する</button>
+            <button onclick="document.getElementById('import-area').style.display='none'; document.getElementById('import-text').value='';">キャンセル</button>
+        </div>
+    </div>
+
+    <div id="result-modal" onclick="closeModal(event)">
+        <p style="color:white; font-size:12px; margin-bottom:10px;">長押しで保存</p>
+        <img id="result-img" src="" onclick="event.stopPropagation()">
+    </div>
+
+    <script>
+        // ========== 定数・グローバル状態 ==========
+        const holidays2026 = {"1-1":"元日","1-12":"成人の日","2-11":"建国記念の日","2-23":"天皇誕生日","3-20":"春分の日","4-29":"昭和の日","5-3":"憲法記念日","5-4":"みどりの日","5-5":"こどもの日","5-6":"振替休日","7-20":"海の日","8-11":"山の日","9-21":"敬老の日","9-22":"秋分の日","10-12":"スポーツの日","11-3":"文化の日","11-23":"勤労感謝の日"};
+        let currentNavDate = new Date();
+        let viewMode = localStorage.getItem('viewMode') || 'month';
+        let currentStyle = localStorage.getItem('currentStyle') || 'cute';
+        let currentColor = localStorage.getItem('currentColor') || '#2c3e50';
+        let hasBorder = localStorage.getItem('hasBorder') !== 'false';
+        const symbols = ['◎', '〇', '△', '×', '休'];
+        /* 固定カラー6個 ＋ 7個目は自由選択（カラーピッカー） */
+        const colors = ['#2c3e50', '#d35400', '#27ae60', '#2980b9', '#8e44ad', '#c0392b'];
+
+        // ========== 定休日チェック ==========
+        document.querySelectorAll('.day-check').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                let fixedHolidays = JSON.parse(localStorage.getItem('fixedHolidays') || "[]");
+                if (this.checked) {
+                    if (!fixedHolidays.includes(this.value)) fixedHolidays.push(this.value);
+                } else {
+                    fixedHolidays = fixedHolidays.filter(h => h !== this.value);
+                }
+                localStorage.setItem('fixedHolidays', JSON.stringify(fixedHolidays));
+                const allCells = document.querySelectorAll('.cell');
+                allCells.forEach(cell => {
+                    if (cell.dataset.wday === this.value) {
+                        const statusEl = cell.querySelector('.status');
+                        const key = cell.dataset.key;
+                        const newVal = this.checked ? '休' : '◎';
+                        statusEl.innerText = newVal;
+                        localStorage.setItem(key, newVal);
+                    }
+                });
+            });
+        });
+
+        // ========== ロゴ・コメント・枠 ==========
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { localStorage.setItem('shopLogo', e.target.result); render(); };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function updateComment() {
+            localStorage.setItem('savedComment', document.getElementById('input-comment').value);
+            document.getElementById('display-comment').innerText = document.getElementById('input-comment').value;
+        }
+        function saveSnsText() { localStorage.setItem('savedSnsText', document.getElementById('sns-text').value); }
+        function toggleBorder() {
+            hasBorder = !hasBorder;
+            localStorage.setItem('hasBorder', hasBorder);
+            render();
+        }
+
+        // ========== カレンダー描画 ==========
+        function render() {
+            const grid = document.getElementById('calendar-grid');
+            const area = document.getElementById('capture-area');
+            grid.innerHTML = '';
+
+            area.style.height = (viewMode === 'month') ? '450px' : '360px';
+            document.getElementById('btn-month').className = (viewMode === 'month') ? 'active' : '';
+            document.getElementById('btn-week').className = (viewMode === 'week') ? 'active' : '';
+
+            document.body.className = `style-${currentStyle} ${hasBorder ? 'has-border' : ''}`;
+            document.getElementById('btn-border').innerText = hasBorder ? '枠あり' : '枠なし';
+            document.getElementById('btn-border').className = hasBorder ? 'active' : '';
+
+            document.getElementById('select-style').value = currentStyle;
+            document.documentElement.style.setProperty('--main-color', currentColor);
+            const customColorEl = document.getElementById('custom-color');
+            if (customColorEl) customColorEl.value = currentColor;
+
+            document.getElementById('input-comment').value = localStorage.getItem('savedComment') || '';
+            document.getElementById('display-comment').innerText = localStorage.getItem('savedComment') || '';
+            document.getElementById('sns-text').value = localStorage.getItem('savedSnsText') || '';
+
+            const fixedHolidays = JSON.parse(localStorage.getItem('fixedHolidays') || "[]");
+            document.querySelectorAll('.day-check').forEach(i => i.checked = fixedHolidays.includes(i.value));
+
+            const logoData = localStorage.getItem('shopLogo');
+            const logoImg = document.getElementById('logo-preview');
+            if (logoData) { logoImg.src = logoData; logoImg.style.display = 'block'; }
+            else { logoImg.style.display = 'none'; }
+
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            days.forEach((d, i) => {
+                const el = document.createElement('div');
+                el.className = 'day-label' + (i === 0 ? ' is-sun' : '');
+                el.innerText = d;
+                grid.appendChild(el);
+            });
+
+            if (viewMode === 'month') {
+                const y = currentNavDate.getFullYear(), m = currentNavDate.getMonth();
+                document.getElementById('calendar-title').innerText = `${y}.${String(m + 1).padStart(2, '0')}`;
+                const firstDay = new Date(y, m, 1).getDay();
+                const lastDate = new Date(y, m + 1, 0).getDate();
+                for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+                for (let i = 1; i <= lastDate; i++) createCell(new Date(y, m, i), grid, fixedHolidays);
+            } else {
+                let startOfWeek = new Date(currentNavDate);
+                startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+                document.getElementById('calendar-title').innerText = `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()}〜`;
+                for (let i = 0; i < 7; i++) createCell(new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i), grid, fixedHolidays);
+            }
+        }
+
+        function createCell(dObj, parent, fixedHolidays) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            const y = dObj.getFullYear(), m = dObj.getMonth() + 1, d = dObj.getDate();
+            const wday = String(dObj.getDay());
+            const storageKey = `reserve_${y}-${m}-${d}`;
+            const isHoliday = holidays2026[`${m}-${d}`];
+            const dateClass = (dObj.getDay() === 0 || isHoliday) ? 'is-sun' : '';
+
+            cell.dataset.key = storageKey;
+            cell.dataset.wday = wday;
+
+            let savedValue = localStorage.getItem(storageKey);
+            if (savedValue === null) {
+                savedValue = fixedHolidays.includes(wday) ? '休' : '◎';
+                localStorage.setItem(storageKey, savedValue);
+            }
+
+            cell.innerHTML = `<span class="date-num ${dateClass}">${d}</span><span class="status">${savedValue}</span>`;
+
+            cell.onclick = function() {
+                const s = this.querySelector('.status');
+                let currentIdx = symbols.indexOf(s.innerText);
+                if (currentIdx === -1) currentIdx = 0;
+                let nextIdx = (currentIdx + 1) % symbols.length;
+                s.innerText = symbols[nextIdx];
+                localStorage.setItem(storageKey, s.innerText);
+            };
+            parent.appendChild(cell);
+        }
+
+        /* キャプチャ直前に計算済みの色をインライン化し、html2canvas の色ズレを防ぐ */
+        function applyInlineColorsForCapture() {
+            const area = document.getElementById('capture-area');
+            const saved = [];
+            function stash(el, prop) {
+                saved.push({ el, prop, value: el.style[prop] });
+                el.style[prop] = getComputedStyle(el)[prop] || '';
+            }
+            stash(area, 'backgroundColor');
+            stash(area, 'borderColor');
+            area.querySelectorAll('.nav-btn, h2, .status, .legend, .powered').forEach(el => {
+                stash(el, 'color');
+            });
+            return saved;
+        }
+        function removeInlineColorsForCapture(saved) {
+            saved.forEach(({ el, prop, value }) => { el.style[prop] = value || ''; });
+        }
+
+        // ========== 画像プレビュー（モーダル） ==========
+        async function openPreviewModal() {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('no-export'));
+            const savedStyles = applyInlineColorsForCapture();
+            try {
+                const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
+                document.getElementById('result-img').src = canvas.toDataURL("image/png");
+                document.getElementById('result-modal').style.display = 'flex';
+            } finally {
+                removeInlineColorsForCapture(savedStyles);
+            }
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('no-export'));
+        }
+
+        function closeModal(ev) {
+            if (ev && ev.target.closest('#result-img')) return;
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        // ========== 共有（Web Share API）とテキストコピー ==========
+        async function shareImageAndCopy() {
+            const snsText = document.getElementById('sns-text').value;
+            try {
+                await navigator.clipboard.writeText(snsText);
+            } catch (e) { /* コピー失敗時も共有は続行 */ }
+
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('no-export'));
+            const savedStyles = applyInlineColorsForCapture();
+            let canvas;
+            try {
+                canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
+            } finally {
+                removeInlineColorsForCapture(savedStyles);
+            }
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('no-export'));
+
+            canvas.toBlob(async function(blob) {
+                const file = new File([blob], 'calendar.png', { type: 'image/png' });
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            text: snsText || '空席カレンダー'
+                        });
+                        if (snsText) alert('文章をコピーしました。共有メニューを閉じた後、貼り付けてご利用ください。');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') alert('共有に失敗しました。画像確認で保存してからアプリで共有してください。');
+                    }
+                } else {
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('result-img').src = url;
+                    document.getElementById('result-modal').style.display = 'flex';
+                    if (snsText) alert('文章をコピーしました。画像は長押しで保存し、インスタなどで共有してください。');
+                }
+            }, 'image/png');
+        }
+
+        // ========== ナビ・表示切替・スタイル・色 ==========
+        function moveNav(diff) {
+            if (viewMode === 'month') currentNavDate.setMonth(currentNavDate.getMonth() + diff);
+            else currentNavDate.setDate(currentNavDate.getDate() + (diff * 7));
+            render();
+        }
+        function switchView(v) { viewMode = v; localStorage.setItem('viewMode', v); render(); }
+        function changeStyle(s) { currentStyle = s; localStorage.setItem('currentStyle', s); render(); }
+        function changeColor(c) { currentColor = c; localStorage.setItem('currentColor', c); render(); }
+
+        // ========== 表示中の月/週のみリセット ==========
+        function resetCurrentPeriod() {
+            const keysToRemove = [];
+            if (viewMode === 'month') {
+                const y = currentNavDate.getFullYear(), m = currentNavDate.getMonth();
+                const lastDate = new Date(y, m + 1, 0).getDate();
+                for (let d = 1; d <= lastDate; d++) keysToRemove.push(`reserve_${y}-${m + 1}-${d}`);
+            } else {
+                let startOfWeek = new Date(currentNavDate);
+                startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i);
+                    keysToRemove.push(`reserve_${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`);
+                }
+            }
+            if (!confirm(`表示中の${viewMode === 'month' ? '月' : '週'}のデータのみリセットしますか？`)) return;
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            render();
+        }
+
+        // ========== データ書き出し・読み込み（引き継ぎ） ==========
+        function exportData() {
+            const data = {
+                reserve: {},
+                savedComment: localStorage.getItem('savedComment') || '',
+                savedSnsText: localStorage.getItem('savedSnsText') || '',
+                fixedHolidays: JSON.parse(localStorage.getItem('fixedHolidays') || '[]'),
+                shopLogo: localStorage.getItem('shopLogo') || '',
+                viewMode: localStorage.getItem('viewMode') || 'month',
+                currentStyle: localStorage.getItem('currentStyle') || 'cute',
+                currentColor: localStorage.getItem('currentColor') || '#2c3e50',
+                hasBorder: localStorage.getItem('hasBorder') !== 'false'
+            };
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('reserve_')) data.reserve[key] = localStorage.getItem(key);
+            }
+            const json = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(json).then(() => alert('データをコピーしました。テキストとして保管してください。')).catch(() => alert('コピーに失敗しました。'));
+        }
+
+        function importData() {
+            const raw = document.getElementById('import-text').value.trim();
+            if (!raw) { alert('テキストを貼り付けてください。'); return; }
+            try {
+                const data = JSON.parse(raw);
+                if (data.savedComment !== undefined) localStorage.setItem('savedComment', data.savedComment);
+                if (data.savedSnsText !== undefined) localStorage.setItem('savedSnsText', data.savedSnsText);
+                if (data.fixedHolidays) localStorage.setItem('fixedHolidays', JSON.stringify(data.fixedHolidays));
+                if (data.shopLogo) localStorage.setItem('shopLogo', data.shopLogo);
+                if (data.viewMode) localStorage.setItem('viewMode', data.viewMode);
+                if (data.currentStyle) localStorage.setItem('currentStyle', data.currentStyle);
+                if (data.currentColor) localStorage.setItem('currentColor', data.currentColor);
+                if (data.hasBorder !== undefined) localStorage.setItem('hasBorder', String(data.hasBorder));
+                if (data.reserve && typeof data.reserve === 'object') {
+                    Object.keys(data.reserve).forEach(k => localStorage.setItem(k, data.reserve[k]));
+                }
+                viewMode = localStorage.getItem('viewMode') || 'month';
+                currentStyle = localStorage.getItem('currentStyle') || 'cute';
+                currentColor = localStorage.getItem('currentColor') || '#2c3e50';
+                hasBorder = localStorage.getItem('hasBorder') !== 'false';
+                document.getElementById('import-area').style.display = 'none';
+                document.getElementById('import-text').value = '';
+                render();
+                alert('データを復元しました。');
+            } catch (e) {
+                alert('正しいJSON形式のテキストを貼り付けてください。');
+            }
+        }
+
+        // ========== カラーパレット・カスタム色 ==========
+        const palette = document.getElementById('color-palette');
+        colors.forEach(c => {
+            const dot = document.createElement('div');
+            dot.className = 'color-dot';
+            dot.style.backgroundColor = c;
+            dot.onclick = () => changeColor(c);
+            palette.appendChild(dot);
+        });
+        document.getElementById('custom-color').addEventListener('input', function() {
+            changeColor(this.value);
+        });
+
+        render();
+    </script>
+</body>
+</html>
