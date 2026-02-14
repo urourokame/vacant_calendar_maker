@@ -6,6 +6,10 @@
     <title>空席カレンダーメーカー</title>
     <link rel="icon" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
+    <meta property="og:title" content="空席カレンダーメーカー">
+    <meta property="og:description" content="予約空き状況を5秒で画像化！シンプル操作でシェアも簡単。">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +39,6 @@
         .style-cute.has-border #capture-area { border: 6px dotted var(--main-color); border-radius: 10px; }
         .style-cool.has-border #capture-area {
             border: 18px solid var(--main-color);
-            align-items: center;
         }
         .style-cool.has-border #capture-area .header-controls,
         .style-cool.has-border #capture-area .grid,
@@ -60,7 +63,7 @@
             background: #ffffff;
             font-family: "Noto Sans JP", sans-serif;
             font-weight: 700;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.06em;
         }
 
         /* ========== スタイル：Styled（おしゃれ・上品な明朝） ========== */
@@ -95,7 +98,6 @@
         .style-luxury #capture-area .header-controls { border-bottom: 1px solid var(--main-color); padding-bottom: 12px; margin-bottom: 12px; }
         .style-luxury #capture-area .day-label { font-weight: 600; }
         .style-luxury #capture-area .legend {
-            font-size: 8px;
             letter-spacing: 0.1em;
             color: var(--main-color);
             border-top: 1px solid rgba(0,0,0,0.12);
@@ -156,8 +158,8 @@
         }
 
         .legend-wrap { flex-shrink: 0; margin-top: auto; }
-        .legend { font-size: 9px; border-top: 1px dashed #ccc; padding-top: 8px; display: flex; justify-content: space-between; font-weight: bold; color: #666; }
-        .powered { text-align: right; font-size: 9px; color: #bbb; margin-top: 5px; }
+        .legend { font-size: 11px; border-top: 1px dashed #ccc; padding-top: 8px; display: flex; justify-content: space-between; font-weight: bold; color: #666; }
+        .powered { text-align: center; font-size: 9px; color: #9e9e9e; margin-top: -10px;margin-bottom: -15px;}
 
         /* ========== 操作UI（キャプチャエリア外） ========== */
         .controls { margin-top: 20px; background: white; padding: 15px; border-radius: 12px; width: 360px; display: grid; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -204,7 +206,8 @@
         <div class="comment-area" id="display-comment"></div>
         <div class="legend-wrap">
             <div class="legend"><span>◎:貸切OK</span><span>〇:空席あり</span><span>△:残り僅か</span><span>×:満席</span></div>
-            <div class="powered">Powered by U</div>
+            <br>
+            <div class="powered">© 2026 空席カレンダーメーカー Powered by U</div>
         </div>
     </div>
 
@@ -277,8 +280,8 @@
 
     <script>
         // ========== バージョン管理・更新内容 ==========
-        const APP_VERSION = '1.3.0'; // 次回更新時にここを '1.4' に変える
-        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！';
+        const APP_VERSION = '1.3.1'; // 次回更新時にここを '1.4' に変える
+        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
         const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
 
         (function checkVersion() {
