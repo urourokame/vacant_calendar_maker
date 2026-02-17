@@ -196,7 +196,7 @@
     </div>
 
     <div id="capture-area">
-        <div id="logo-container"><img id="logo-preview" src=""></div>
+        <div id="logo-container"><img id="logo-preview" src="" onclick="removeLogo()" style="cursor: pointer;" title="クリックで削除"></div>
         <div class="header-controls">
             <button class="nav-btn" onclick="moveNav(-1)">◀</button>
             <h2 id="calendar-title"></h2>
@@ -280,8 +280,8 @@
 
     <script>
         // ========== バージョン管理・更新内容 ==========
-        const APP_VERSION = '1.3.1'; // 次回更新時にここを '1.4' に変える
-        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
+        const APP_VERSION = '1.3.2'; // 次回更新時にここを '1.4' に変える
+        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・ロゴタップで削除できるようにしました\n《ver1.3.1》\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
         const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
 
         (function checkVersion() {
@@ -629,6 +629,14 @@
         });
 
         render();
+        
+        function removeLogo() {
+            if (confirm('ロゴを削除しますか？')) {
+            localStorage.removeItem('shopLogo'); // 保存データを消す
+            document.getElementById('logo-preview').src = ""; // プレビューを空に
+            render(); // 再描画して非表示にする
+        }
+}
     </script>
 </body>
 </html>
