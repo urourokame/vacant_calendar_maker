@@ -35,10 +35,15 @@
         }
 
         /* ---------- 枠あり：スタイルごとに太さ・形を変更 ---------- */
-        .has-border #capture-area { border: 12px solid var(--main-color); }
+        .has-border #capture-area {
+            border: 12px solid var(--main-color);
+            border-radius: 12px;
+            background-clip: padding-box;
+        }
         .style-cute.has-border #capture-area { border: 6px dotted var(--main-color); border-radius: 10px; }
         .style-cool.has-border #capture-area {
             border: 18px solid var(--main-color);
+            border-radius: 0px;
         }
         .style-cool.has-border #capture-area .header-controls,
         .style-cool.has-border #capture-area .grid,
@@ -46,10 +51,10 @@
             width: 100%;
             max-width: 100%;
         }
-        .style-styled.has-border #capture-area { border: 2px solid var(--main-color); padding: 35px 25px; box-shadow: inset 0 0 40px rgba(0,0,0,0.03); }
-        .style-natural.has-border #capture-area { border: 2px solid #7a8a7a; border-radius: 10px; }
-        .style-luxury.has-border #capture-area { border: 3px solid #b8860b; box-shadow: inset 0 0 0 1px rgba(184,134,11,0.25); }
-        .style-pop.has-border #capture-area { border: 6px solid var(--main-color); border-radius: 16px; }
+        .style-styled.has-border #capture-area { border: 2px solid var(--main-color); padding: 35px 25px; box-shadow: inset 0 0 40px rgba(0,0,0,0.03); border-radius: 6px;}
+        .style-natural.has-border #capture-area { border: 2px solid #7a8a7a; border-radius: 6px; }
+        .style-luxury.has-border #capture-area { border: 3px solid #b8860b; box-shadow: inset 0 0 0 1px rgba(184,134,11,0.25); border-radius: 6px;}
+        .style-pop.has-border #capture-area { border: 6px solid var(--main-color); border-radius: 6px; }
 
         /* ========== スタイル：Cute（かわいい・丸文字） ========== */
         .style-cute #capture-area {
@@ -280,8 +285,8 @@
 
     <script>
         // ========== バージョン管理・更新内容 ==========
-        const APP_VERSION = '1.3.2'; // 次回更新時にここを '1.4' に変える
-        const RELEASE_NOTES = 'ver ' + APP_VERSION + ' の更新内容：\n・ロゴタップで削除できるようにしました\n《ver1.3.1》\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
+        const APP_VERSION = '1.3.3'; // 次回更新時にここを '1.4' に変える
+        const RELEASE_NOTES = '<ver ' + APP_VERSION + '>\n・表示を微調整しました！\n\n<ver1.3.2>\n・ロゴタップで削除できるようにしました\n\n<ver1.3.1>\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
         const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
 
         (function checkVersion() {
@@ -445,6 +450,7 @@
             stash(area, 'borderStyle');
             stash(area, 'borderColor');
             stash(area, 'borderRadius');
+            stash(area, 'backgroundClip');
             stash(area, 'boxShadow');
             stash(area, 'padding');
             area.querySelectorAll('.nav-btn, h2, .status, .legend, .powered').forEach(el => {
