@@ -142,7 +142,18 @@
         .day-label { font-weight: bold; text-align: center; font-size: 11px; padding: 5px 0; }
         .cell { aspect-ratio: 1.1 / 1; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .date-num { font-size: 10px; position: absolute; top: 4px; left: 6px; color: #aaa; }
-        .status { font-size: 22px; font-weight: bold; color: var(--main-color); z-index: 2; margin-top: 5px; }
+        .status {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--main-color);
+            z-index: 2;
+            margin-top: 5px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .status-icon { width: 22px; height: 22px; object-fit: contain; }
         .is-sun, .is-holiday { color: var(--accent-red) !important; }
 
         /* コメントエリア：可変・溢れたらスクロール。凡例は常に最下部に固定 */
@@ -163,7 +174,19 @@
         }
 
         .legend-wrap { flex-shrink: 0; margin-top: auto; }
-        .legend { font-size: 11px; border-top: 1px dashed #ccc; padding-top: 8px; display: flex; justify-content: space-between; font-weight: bold; color: #666; }
+        .legend {
+            font-size: 11px;
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            font-weight: bold;
+            color: #666;
+        }
+        .legend span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+        .legend-icon { width: 13px; height: 13px; object-fit: contain; }
         .powered { text-align: center; font-size: 9px; color: #9e9e9e; margin-top: -10px;margin-bottom: -15px;}
 
         /* ========== 操作UI（キャプチャエリア外） ========== */
@@ -178,6 +201,18 @@
         .color-custom-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .color-custom-wrap input[type="color"] { width: 32px; height: 32px; padding: 0; border: 2px solid #fff; border-radius: 50%; cursor: pointer; background: transparent; }
         .color-custom-wrap label { font-size: 10px; color: #666; }
+        #holiday-icon-preview {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 4px;
+            cursor: pointer;
+            display: none;
+            flex: 0 0 auto;
+            background: #fff;
+        }
         /* ========== 画像プレビュー用モーダル ========== */
         #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
         #result-img { max-width: 90%; max-height: 80%; border-radius: 8px; }
@@ -210,7 +245,13 @@
         <div id="calendar-grid" class="grid"></div>
         <div class="comment-area" id="display-comment"></div>
         <div class="legend-wrap">
-            <div class="legend"><span>◎:貸切OK</span><span>〇:空席あり</span><span>△:残り僅か</span><span>×:満席</span></div>
+            <div class="legend">
+                <span>◎:貸切OK</span>
+                <span>〇:空席あり</span>
+                <span>△:残り僅か</span>
+                <span>×:満席</span>
+                <span id="legend-holiday-item">休:定休日</span>
+            </div>
             <br>
             <div class="powered">© 2026 空席カレンダーメーカー Powered by U</div>
         </div>
@@ -250,6 +291,11 @@
                 <option value="pop">ポップ</option>
             </select>
         </div>
+        <div class="btn-group">
+            <button onclick="document.getElementById('holiday-icon-input').click()">休アイコン選択</button>
+            <input type="file" id="holiday-icon-input" hidden accept="image/*" onchange="handleHolidayIconUpload(this)">
+            <img id="holiday-icon-preview" src="" alt="休アイコン" onclick="removeHolidayIcon()" title="クリックで削除">
+        </div>
         <div class="color-btns" id="color-palette">
             <div class="color-custom-wrap" title="自由に色を選択">
                 <input type="color" id="custom-color" value="#2c3e50" title="カスタム色">
@@ -285,9 +331,9 @@
 
     <script>
         // ========== バージョン管理・更新内容 ==========
-        const APP_VERSION = '1.3.3'; // 次回更新時にここを '1.4' に変える
-        const RELEASE_NOTES = '<ver ' + APP_VERSION + '>\n・表示を微調整しました！\n\n<ver1.3.2>\n・ロゴタップで削除できるようにしました\n\n<ver1.3.1>\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
-        const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
+        const APP_VERSION = '1.3.4'; // 次回更新時にここを更新
+        const RELEASE_NOTES = '<ver ' + APP_VERSION + '>\n・「休」をアップロードしたアイコンで表示できるようにしました（セル・凡例）。\n・休アイコンは500KB以下の画像に対応しました。\n\n<ver1.3.3>\n・表示を微調整しました！\n\n<ver1.3.2>\n・ロゴタップで削除できるようにしました\n\n<ver1.3.1>\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
+        const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・休アイコン選択: 休ステータスを画像表示にできます（500KB以下）。\n・休アイコン画像をタップ: 削除できます。\n・休アイコン未設定時: 「休」の文字表示になります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
 
         (function checkVersion() {
             const lastSeen = localStorage.getItem('app_version');
@@ -324,19 +370,89 @@
                         const statusEl = cell.querySelector('.status');
                         const key = cell.dataset.key;
                         const newVal = this.checked ? '休' : '◎';
-                        statusEl.innerText = newVal;
+                        cell.dataset.status = newVal;
+                        setStatusDisplay(statusEl, newVal, getHolidayIconData());
                         localStorage.setItem(key, newVal);
                     }
                 });
             });
         });
 
-        // ========== ロゴ・コメント・枠 ==========
+        // ========== ロゴ・休アイコン・コメント・枠 ==========
         function handleLogoUpload(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => { localStorage.setItem('shopLogo', e.target.result); render(); };
                 reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function getHolidayIconData() {
+            return localStorage.getItem('holidayStatusIcon') || '';
+        }
+        function setStatusDisplay(statusEl, value, holidayIconData) {
+            if (!statusEl) return;
+            statusEl.textContent = '';
+            if (value === '休' && holidayIconData) {
+                const img = document.createElement('img');
+                img.className = 'status-icon';
+                img.src = holidayIconData;
+                img.alt = '休';
+                statusEl.appendChild(img);
+                return;
+            }
+            statusEl.textContent = value;
+        }
+        function updateHolidayIconPreview(holidayIconData) {
+            const preview = document.getElementById('holiday-icon-preview');
+            if (!preview) return;
+            if (holidayIconData) {
+                preview.src = holidayIconData;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+                preview.removeAttribute('src');
+            }
+        }
+        function updateLegendHolidayItem(holidayIconData) {
+            const legendItem = document.getElementById('legend-holiday-item');
+            if (!legendItem) return;
+            legendItem.textContent = '';
+            if (holidayIconData) {
+                const img = document.createElement('img');
+                img.className = 'legend-icon';
+                img.src = holidayIconData;
+                img.alt = '休';
+                legendItem.appendChild(img);
+                legendItem.appendChild(document.createTextNode(':定休日'));
+            } else {
+                legendItem.textContent = '休:定休日';
+            }
+        }
+        function handleHolidayIconUpload(input) {
+            if (!(input.files && input.files[0])) return;
+            const file = input.files[0];
+            if (file.size > 500 * 1024) {
+                alert('休アイコンは500KB以下の画像を選択してください。');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    localStorage.setItem('holidayStatusIcon', e.target.result);
+                    render();
+                } catch (err) {
+                    alert('休アイコンを保存できませんでした。別の小さい画像を選択してください。');
+                } finally {
+                    input.value = '';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        function removeHolidayIcon() {
+            if (confirm('休アイコンを削除しますか？')) {
+                localStorage.removeItem('holidayStatusIcon');
+                render();
             }
         }
         function updateComment() {
@@ -380,6 +496,9 @@
             const logoImg = document.getElementById('logo-preview');
             if (logoData) { logoImg.src = logoData; logoImg.style.display = 'block'; }
             else { logoImg.style.display = 'none'; }
+            const holidayIconData = getHolidayIconData();
+            updateHolidayIconPreview(holidayIconData);
+            updateLegendHolidayItem(holidayIconData);
 
             const days = ['日', '月', '火', '水', '木', '金', '土'];
             days.forEach((d, i) => {
@@ -395,16 +514,16 @@
                 const firstDay = new Date(y, m, 1).getDay();
                 const lastDate = new Date(y, m + 1, 0).getDate();
                 for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
-                for (let i = 1; i <= lastDate; i++) createCell(new Date(y, m, i), grid, fixedHolidays);
+                for (let i = 1; i <= lastDate; i++) createCell(new Date(y, m, i), grid, fixedHolidays, holidayIconData);
             } else {
                 let startOfWeek = new Date(currentNavDate);
                 startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
                 document.getElementById('calendar-title').innerText = `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()}〜`;
-                for (let i = 0; i < 7; i++) createCell(new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i), grid, fixedHolidays);
+                for (let i = 0; i < 7; i++) createCell(new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i), grid, fixedHolidays, holidayIconData);
             }
         }
 
-        function createCell(dObj, parent, fixedHolidays) {
+        function createCell(dObj, parent, fixedHolidays, holidayIconData) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             const y = dObj.getFullYear(), m = dObj.getMonth() + 1, d = dObj.getDate();
@@ -421,16 +540,26 @@
                 savedValue = fixedHolidays.includes(wday) ? '休' : '◎';
                 localStorage.setItem(storageKey, savedValue);
             }
+            cell.dataset.status = savedValue;
 
-            cell.innerHTML = `<span class="date-num ${dateClass}">${d}</span><span class="status">${savedValue}</span>`;
+            const dateNum = document.createElement('span');
+            dateNum.className = `date-num ${dateClass}`;
+            dateNum.innerText = d;
+            const statusEl = document.createElement('span');
+            statusEl.className = 'status';
+            setStatusDisplay(statusEl, savedValue, holidayIconData);
+            cell.appendChild(dateNum);
+            cell.appendChild(statusEl);
 
             cell.onclick = function() {
-                const s = this.querySelector('.status');
-                let currentIdx = symbols.indexOf(s.innerText);
+                const currentValue = this.dataset.status || localStorage.getItem(storageKey) || '◎';
+                let currentIdx = symbols.indexOf(currentValue);
                 if (currentIdx === -1) currentIdx = 0;
                 let nextIdx = (currentIdx + 1) % symbols.length;
-                s.innerText = symbols[nextIdx];
-                localStorage.setItem(storageKey, s.innerText);
+                const nextValue = symbols[nextIdx];
+                this.dataset.status = nextValue;
+                setStatusDisplay(statusEl, nextValue, getHolidayIconData());
+                localStorage.setItem(storageKey, nextValue);
             };
             parent.appendChild(cell);
         }
@@ -579,6 +708,7 @@
                 savedSnsText: localStorage.getItem('savedSnsText') || '',
                 fixedHolidays: JSON.parse(localStorage.getItem('fixedHolidays') || '[]'),
                 shopLogo: localStorage.getItem('shopLogo') || '',
+                holidayStatusIcon: localStorage.getItem('holidayStatusIcon') || '',
                 viewMode: localStorage.getItem('viewMode') || 'month',
                 currentStyle: localStorage.getItem('currentStyle') || 'cute',
                 currentColor: localStorage.getItem('currentColor') || '#2c3e50',
@@ -601,6 +731,10 @@
                 if (data.savedSnsText !== undefined) localStorage.setItem('savedSnsText', data.savedSnsText);
                 if (data.fixedHolidays) localStorage.setItem('fixedHolidays', JSON.stringify(data.fixedHolidays));
                 if (data.shopLogo) localStorage.setItem('shopLogo', data.shopLogo);
+                if (data.holidayStatusIcon !== undefined) {
+                    if (data.holidayStatusIcon) localStorage.setItem('holidayStatusIcon', data.holidayStatusIcon);
+                    else localStorage.removeItem('holidayStatusIcon');
+                }
                 if (data.viewMode) localStorage.setItem('viewMode', data.viewMode);
                 if (data.currentStyle) localStorage.setItem('currentStyle', data.currentStyle);
                 if (data.currentColor) localStorage.setItem('currentColor', data.currentColor);
@@ -617,7 +751,11 @@
                 render();
                 alert('データを復元しました。');
             } catch (e) {
-                alert('正しいJSON形式のテキストを貼り付けてください。');
+                if (e instanceof SyntaxError) {
+                    alert('正しいJSON形式のテキストを貼り付けてください。');
+                } else {
+                    alert('データの復元に失敗しました。休アイコンの容量が大きすぎる可能性があります。');
+                }
             }
         }
 
@@ -638,11 +776,11 @@
         
         function removeLogo() {
             if (confirm('ロゴを削除しますか？')) {
-            localStorage.removeItem('shopLogo'); // 保存データを消す
-            document.getElementById('logo-preview').src = ""; // プレビューを空に
-            render(); // 再描画して非表示にする
+                localStorage.removeItem('shopLogo'); // 保存データを消す
+                document.getElementById('logo-preview').src = ""; // プレビューを空に
+                render(); // 再描画して非表示にする
+            }
         }
-}
     </script>
 </body>
 </html>
