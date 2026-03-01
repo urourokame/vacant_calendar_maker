@@ -195,7 +195,82 @@
         button, select, textarea { flex: 1; padding: 12px; font-size: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; }
         button.active { background: var(--main-color); color: white; border-color: var(--main-color); }
         textarea { height: 50px; resize: none; flex: none; width: 100%; }
+        .settings-panel { border: 1px solid #e6e6e6; border-radius: 10px; background: #fcfcfc; overflow: hidden; }
+        .settings-panel[open] { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02); }
+        .settings-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 11px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #4a4a4a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .settings-summary::-webkit-details-marker { display: none; }
+        .settings-summary::after { content: "＋"; font-size: 14px; line-height: 1; color: #666; }
+        .settings-panel[open] .settings-summary::after { content: "−"; }
+        .settings-body { border-top: 1px solid #eee; padding: 10px; display: grid; gap: 10px; }
+        .settings-body .holiday-settings,
+        .settings-body .toggle-settings { margin: 0; }
         .holiday-settings { font-size: 11px; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid var(--main-color); }
+        .toggle-settings { font-size: 11px; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #7f8c8d; }
+        .toggle-note { font-size: 10px; color: #666; margin-top: 4px; }
+        .toggle-preset-options { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+        .toggle-preset-item { display: inline-flex; align-items: center; gap: 3px; }
+        .toggle-add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .toggle-add-row input {
+            flex: 1 1 110px;
+            min-width: 0;
+            padding: 9px 10px;
+            font-size: 11px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .toggle-add-row button { flex: 0 0 auto; padding: 9px 12px; font-size: 11px; }
+        .toggle-status-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .toggle-status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            padding: 3px 8px;
+            background: #fff;
+            font-size: 11px;
+        }
+        .toggle-status-chip.fixed { background: #f3f3f3; color: #666; border-style: dashed; }
+        .toggle-desc-input {
+            width: 96px;
+            min-width: 0;
+            padding: 2px 6px;
+            font-size: 10px;
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            background: #fff;
+        }
+        button.toggle-update-btn {
+            flex: none;
+            padding: 3px 8px;
+            font-size: 10px;
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            background: #fff;
+            cursor: pointer;
+        }
+        .toggle-remove-btn {
+            border: none;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 12px;
+            line-height: 1;
+            flex: none;
+        }
         .color-btns { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; align-items: center; flex-wrap: wrap; }
         .color-dot { min-width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.2); flex-shrink: 0; cursor: pointer; }
         .color-custom-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
@@ -245,29 +320,13 @@
         <div id="calendar-grid" class="grid"></div>
         <div class="comment-area" id="display-comment"></div>
         <div class="legend-wrap">
-            <div class="legend">
-                <span>◎:貸切OK</span>
-                <span>〇:空席あり</span>
-                <span>△:残り僅か</span>
-                <span>×:満席</span>
-                <span id="legend-holiday-item">休:定休日</span>
-            </div>
+            <div class="legend" id="legend-list"></div>
             <br>
             <div class="powered">© 2026 空席カレンダーメーカー Powered by U</div>
         </div>
     </div>
 
     <div class="controls">
-        <div class="holiday-settings">
-            <b>定休日を一括設定:</b><br>
-            <label><input type="checkbox" value="0" class="day-check">日</label>
-            <label><input type="checkbox" value="1" class="day-check">月</label>
-            <label><input type="checkbox" value="2" class="day-check">火</label>
-            <label><input type="checkbox" value="3" class="day-check">水</label>
-            <label><input type="checkbox" value="4" class="day-check">木</label>
-            <label><input type="checkbox" value="5" class="day-check">金</label>
-            <label><input type="checkbox" value="6" class="day-check">土</label>
-        </div>
         <textarea id="input-comment" placeholder="画像内の一言コメント(2行までを推奨)" oninput="updateComment()"></textarea>
         <textarea id="sns-text" placeholder="投稿用文章" oninput="saveSnsText()"></textarea>
         <div class="btn-group">
@@ -280,8 +339,6 @@
             <button id="btn-border" onclick="toggleBorder()">枠あり</button>
         </div>
         <div class="btn-group">
-            <button onclick="document.getElementById('logo-input').click()">ロゴ選択</button>
-            <input type="file" id="logo-input" hidden accept="image/*" onchange="handleLogoUpload(this)">
             <select onchange="changeStyle(this.value)" id="select-style">
                 <option value="cute">かわいい</option>
                 <option value="cool">クール</option>
@@ -291,29 +348,60 @@
                 <option value="pop">ポップ</option>
             </select>
         </div>
-        <div class="btn-group">
-            <button onclick="document.getElementById('holiday-icon-input').click()">休アイコン選択</button>
-            <input type="file" id="holiday-icon-input" hidden accept="image/*" onchange="handleHolidayIconUpload(this)">
-            <img id="holiday-icon-preview" src="" alt="休アイコン" onclick="removeHolidayIcon()" title="クリックで削除">
-        </div>
         <div class="color-btns" id="color-palette">
             <div class="color-custom-wrap" title="自由に色を選択">
                 <input type="color" id="custom-color" value="#2c3e50" title="カスタム色">
                 <label for="custom-color">自由色</label>
             </div>
         </div>
-        <div class="btn-group">
-            <button onclick="resetCurrentPeriod()" style="color:#e74c3c; border:1px solid #e74c3c; background:none; font-size:11px;">表示中の月/週をリセット</button>
-        </div>
-        <div class="btn-group">
-            <button onclick="exportData()" style="font-size:11px;">データ書き出し（コピー）</button>
-            <button onclick="document.getElementById('import-area').style.display='block'; document.getElementById('import-text').focus();" style="font-size:11px;">データ読み込み</button>
-        </div>
-        <div id="import-area" style="display:none;">
-            <textarea id="import-text" placeholder="書き出したテキストを貼り付けてください" style="height:60px; font-size:11px;"></textarea>
-            <button onclick="importData()" style="font-size:11px;">復元する</button>
-            <button onclick="document.getElementById('import-area').style.display='none'; document.getElementById('import-text').value='';">キャンセル</button>
-        </div>
+        <details id="settings-panel" class="settings-panel">
+            <summary class="settings-summary">設定</summary>
+            <div class="settings-body">
+                <div class="holiday-settings">
+                    <b>定休日を一括設定:</b><br>
+                    <label><input type="checkbox" value="0" class="day-check">日</label>
+                    <label><input type="checkbox" value="1" class="day-check">月</label>
+                    <label><input type="checkbox" value="2" class="day-check">火</label>
+                    <label><input type="checkbox" value="3" class="day-check">水</label>
+                    <label><input type="checkbox" value="4" class="day-check">木</label>
+                    <label><input type="checkbox" value="5" class="day-check">金</label>
+                    <label><input type="checkbox" value="6" class="day-check">土</label>
+                </div>
+                <div class="toggle-settings">
+                    <b>日付タップ切替の設定:</b>
+                    <div class="toggle-note">先頭は空白固定。以下の項目を選択/追加/削除できます（追加時は説明も入力）。</div>
+                    <div class="toggle-preset-options" id="toggle-preset-options"></div>
+                    <div class="toggle-add-row">
+                        <input type="text" id="new-toggle-status" maxlength="4" placeholder="追加する記号/文字（最大4文字）">
+                        <input type="text" id="new-toggle-description" maxlength="20" placeholder="説明（例: 予約不可）">
+                        <button type="button" onclick="addCustomToggleStatus()">追加</button>
+                    </div>
+                    <div id="toggle-current-order" class="toggle-note"></div>
+                    <div id="toggle-status-list" class="toggle-status-list"></div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="document.getElementById('logo-input').click()">ロゴ選択</button>
+                    <input type="file" id="logo-input" hidden accept="image/*" onchange="handleLogoUpload(this)">
+                </div>
+                <div class="btn-group">
+                    <button onclick="document.getElementById('holiday-icon-input').click()">休アイコン選択</button>
+                    <input type="file" id="holiday-icon-input" hidden accept="image/*" onchange="handleHolidayIconUpload(this)">
+                    <img id="holiday-icon-preview" src="" alt="休アイコン" onclick="removeHolidayIcon()" title="クリックで削除">
+                </div>
+                <div class="btn-group">
+                    <button onclick="resetCurrentPeriod()" style="color:#e74c3c; border:1px solid #e74c3c; background:none; font-size:11px;">表示中の月/週をリセット</button>
+                </div>
+                <div class="btn-group">
+                    <button onclick="exportData()" style="font-size:11px;">データ書き出し（コピー）</button>
+                    <button onclick="document.getElementById('import-area').style.display='block'; document.getElementById('import-text').focus();" style="font-size:11px;">データ読み込み</button>
+                </div>
+                <div id="import-area" style="display:none;">
+                    <textarea id="import-text" placeholder="書き出したテキストを貼り付けてください" style="height:60px; font-size:11px;"></textarea>
+                    <button onclick="importData()" style="font-size:11px;">復元する</button>
+                    <button onclick="document.getElementById('import-area').style.display='none'; document.getElementById('import-text').value='';">キャンセル</button>
+                </div>
+            </div>
+        </details>
     </div>
 
     <div id="result-modal" onclick="closeModal(event)">
@@ -331,9 +419,9 @@
 
     <script>
         // ========== バージョン管理・更新内容 ==========
-        const APP_VERSION = '1.3.4'; // 次回更新時にここを更新
-        const RELEASE_NOTES = '<ver ' + APP_VERSION + '>\n・「休」をアップロードしたアイコンで表示できるようにしました（セル・凡例）。\n・休アイコンは500KB以下の画像に対応しました。\n\n<ver1.3.3>\n・表示を微調整しました！\n\n<ver1.3.2>\n・ロゴタップで削除できるようにしました\n\n<ver1.3.1>\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
-        const USAGE_GUIDE = '・日付のマスをタップ: ◎→〇→△→×→休 の順に変わります。\n・休アイコン選択: 休ステータスを画像表示にできます（500KB以下）。\n・休アイコン画像をタップ: 削除できます。\n・休アイコン未設定時: 「休」の文字表示になります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・定休日: チェックでその曜日を一括で「休」にできます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
+        const APP_VERSION = '1.3.8'; // 次回更新時にここを更新
+        const RELEASE_NOTES = '<ver ' + APP_VERSION + '>\n・画像内の凡例を、日付タップ切替設定の有効項目に連動するようにしました。\n・カスタム項目の説明を設定画面で直接更新できるようにしました。\n\n<ver1.3.7>\n・記号を追加するときに説明も入力して保存できるようにしました。\n・トグル設定の表示を「記号:説明」で分かりやすくしました。\n\n<ver1.3.6>\n・設定項目を「設定」パネルにまとめ、開閉できるようにしました。\n・定休日/タップ切替/ロゴ/休アイコン/データ入出力/リセットを下部へ整理しました。\n\n<ver1.3.5>\n・日付タップの初期状態を空白に変更しました。\n・日付タップで切り替える項目を設定で選択/追加/削除できるようにしました。\n\n<ver1.3.4>\n・「休」をアップロードしたアイコンで表示できるようにしました（セル・凡例）。\n・休アイコンは500KB以下の画像に対応しました。\n\n<ver1.3.3>\n・表示を微調整しました！\n\n<ver1.3.2>\n・ロゴタップで削除できるようにしました\n\n<ver1.3.1>\n・テーマを追加しました！\n・カラーに自由選択機能を追加しました！\n・初回・更新時に更新内容が表示されるようにしました！\n・アプリアイコン（タブ・ブックマーク用）を追加しました！\n・出力画像でもテーマの枠・角丸・影が正しく反映されるように修正しました！\n・画面左上に「！」（更新内容）と「？」（使い方）ボタンを追加しました！\n・データ書き出し機能を追加しました！\n・表示を微調整しました！';
+        const USAGE_GUIDE = '・日付のマスをタップ: 空白から始まり、設定した順に切り替わります。\n・設定パネル: 開閉でき、開閉状態はこの端末で保持されます。\n・日付タップ切替の設定: 項目を選択/追加/削除できます（先頭は空白固定）。\n・項目追加: 記号/文字と説明をセットで追加できます。\n・カスタム項目説明: 設定画面から後で直接更新できます。\n・凡例表示: 有効項目のみを設定順で表示し、休アイコン設定時はアイコン+説明になります。\n・休アイコン選択: 休ステータスを画像表示にできます（500KB以下）。\n・休アイコン画像をタップ: 削除できます。\n・休アイコン未設定時: 「休」の文字表示になります。\n・月間/週間: ボタンで表示を切り替えられます。\n・枠あり/なし: 画像の枠の表示を切り替えます。\n・テーマ・色: スタイルと色で見た目を変更できます。\n・①画像確認: プレビューを表示。長押しで保存できます。\n・②画像を共有: 文章をコピーしつつ、画像を共有メニューへ送れます。\n・データ書き出し/読み込み: テキストで保存・別端末へ引き継ぎできます。';
 
         (function checkVersion() {
             const lastSeen = localStorage.getItem('app_version');
@@ -350,9 +438,230 @@
         let currentStyle = localStorage.getItem('currentStyle') || 'cute';
         let currentColor = localStorage.getItem('currentColor') || '#2c3e50';
         let hasBorder = localStorage.getItem('hasBorder') !== 'false';
-        const symbols = ['◎', '〇', '△', '×', '休'];
+        const defaultStatusItems = ['◎', '〇', '△', '×', '休'];
+        const defaultStatusDescriptions = { '◎': '貸切OK', '〇': '空席あり', '△': '残り僅か', '×': '満席', '休': '定休日' };
+        let toggleStatusItems = loadToggleStatusItems();
+        let statusDescriptions = loadStatusDescriptions();
         /* 固定カラー6個 ＋ 7個目は自由選択（カラーピッカー） */
         const colors = ['#2c3e50', '#d35400', '#27ae60', '#2980b9', '#8e44ad', '#c0392b'];
+
+        function sanitizeStatusItem(value) {
+            const normalized = String(value || '').trim();
+            if (!normalized) return '';
+            return normalized.slice(0, 4);
+        }
+        function sanitizeStatusDescription(value) {
+            const normalized = String(value || '').trim();
+            if (!normalized) return '';
+            return normalized.slice(0, 20);
+        }
+        function normalizeStatusItems(items) {
+            if (!Array.isArray(items)) return [];
+            const unique = [];
+            items.forEach(item => {
+                const normalized = sanitizeStatusItem(item);
+                if (!normalized) return;
+                if (!unique.includes(normalized)) unique.push(normalized);
+            });
+            return unique;
+        }
+        function loadToggleStatusItems() {
+            const raw = localStorage.getItem('statusToggleItems');
+            if (raw === null) return [...defaultStatusItems];
+            try {
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) return [...defaultStatusItems];
+                return normalizeStatusItems(parsed);
+            } catch (e) {
+                return [...defaultStatusItems];
+            }
+        }
+        function normalizeStatusDescriptions(rawObj) {
+            if (!rawObj || typeof rawObj !== 'object' || Array.isArray(rawObj)) return {};
+            const normalized = {};
+            Object.keys(rawObj).forEach(rawKey => {
+                const key = sanitizeStatusItem(rawKey);
+                const description = sanitizeStatusDescription(rawObj[rawKey]);
+                if (!key || !description) return;
+                normalized[key] = description;
+            });
+            return normalized;
+        }
+        function loadStatusDescriptions() {
+            const raw = localStorage.getItem('statusToggleDescriptions');
+            let parsed = {};
+            if (raw !== null) {
+                try {
+                    parsed = JSON.parse(raw);
+                } catch (e) {
+                    parsed = {};
+                }
+            }
+            return Object.assign({}, defaultStatusDescriptions, normalizeStatusDescriptions(parsed));
+        }
+        function saveToggleStatusItems() {
+            localStorage.setItem('statusToggleItems', JSON.stringify(toggleStatusItems));
+        }
+        function saveStatusDescriptions() {
+            const customOnly = {};
+            Object.keys(statusDescriptions).forEach(key => {
+                const val = sanitizeStatusDescription(statusDescriptions[key]);
+                if (!val) return;
+                if (defaultStatusDescriptions[key] === val) return;
+                customOnly[key] = val;
+            });
+            localStorage.setItem('statusToggleDescriptions', JSON.stringify(customOnly));
+        }
+        function getStatusDescription(symbol) {
+            return statusDescriptions[symbol] || '';
+        }
+        function formatStatusWithDescription(symbol) {
+            const description = getStatusDescription(symbol);
+            return description ? `${symbol}:${description}` : symbol;
+        }
+        function isDefaultStatusItem(symbol) {
+            return defaultStatusItems.includes(symbol);
+        }
+        function getStatusCycle() {
+            return [''].concat(toggleStatusItems);
+        }
+        function renderToggleSettings() {
+            const presetWrap = document.getElementById('toggle-preset-options');
+            const orderEl = document.getElementById('toggle-current-order');
+            const listEl = document.getElementById('toggle-status-list');
+            if (!presetWrap || !orderEl || !listEl) return;
+
+            presetWrap.innerHTML = '';
+            defaultStatusItems.forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'toggle-preset-item';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = toggleStatusItems.includes(item);
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        if (!toggleStatusItems.includes(item)) toggleStatusItems.push(item);
+                    } else {
+                        toggleStatusItems = toggleStatusItems.filter(s => s !== item);
+                    }
+                    saveToggleStatusItems();
+                    render();
+                });
+                const valueEl = document.createElement('span');
+                valueEl.textContent = formatStatusWithDescription(item);
+                label.appendChild(checkbox);
+                label.appendChild(valueEl);
+                presetWrap.appendChild(label);
+            });
+
+            const trail = toggleStatusItems.length ? toggleStatusItems.map(item => formatStatusWithDescription(item)).join(' → ') : '（空白のみ）';
+            orderEl.textContent = `タップ順: 空白 → ${trail}`;
+
+            listEl.innerHTML = '';
+            const blankChip = document.createElement('span');
+            blankChip.className = 'toggle-status-chip fixed';
+            blankChip.textContent = '（空白）';
+            listEl.appendChild(blankChip);
+
+            toggleStatusItems.forEach(item => {
+                const chip = document.createElement('span');
+                chip.className = 'toggle-status-chip';
+
+                const valueEl = document.createElement('span');
+                valueEl.textContent = formatStatusWithDescription(item);
+                chip.appendChild(valueEl);
+
+                if (!isDefaultStatusItem(item)) {
+                    const descInput = document.createElement('input');
+                    descInput.type = 'text';
+                    descInput.className = 'toggle-desc-input';
+                    descInput.maxLength = 20;
+                    descInput.placeholder = '説明';
+                    descInput.value = getStatusDescription(item);
+                    descInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            updateCustomStatusDescription(item, descInput.value);
+                        }
+                    });
+
+                    const updateBtn = document.createElement('button');
+                    updateBtn.type = 'button';
+                    updateBtn.className = 'toggle-update-btn';
+                    updateBtn.textContent = '更新';
+                    updateBtn.onclick = () => updateCustomStatusDescription(item, descInput.value);
+
+                    chip.appendChild(descInput);
+                    chip.appendChild(updateBtn);
+                }
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'toggle-remove-btn';
+                removeBtn.textContent = '×';
+                removeBtn.title = '削除';
+                removeBtn.onclick = () => removeToggleStatus(item);
+
+                chip.appendChild(removeBtn);
+                listEl.appendChild(chip);
+            });
+        }
+        function updateCustomStatusDescription(symbol, newDescription) {
+            if (isDefaultStatusItem(symbol)) return;
+            const sanitized = sanitizeStatusDescription(newDescription);
+            if (!sanitized) {
+                alert('説明を入力してください。');
+                return;
+            }
+            statusDescriptions[symbol] = sanitized;
+            saveStatusDescriptions();
+            render();
+        }
+        function addCustomToggleStatus() {
+            const symbolInput = document.getElementById('new-toggle-status');
+            const descriptionInput = document.getElementById('new-toggle-description');
+            if (!symbolInput || !descriptionInput) return;
+            const value = sanitizeStatusItem(symbolInput.value);
+            const description = sanitizeStatusDescription(descriptionInput.value);
+            if (!value) {
+                alert('追加する記号や文字を入力してください。');
+                symbolInput.focus();
+                return;
+            }
+            if (!description) {
+                alert('説明を入力してください。');
+                descriptionInput.focus();
+                return;
+            }
+            if (toggleStatusItems.includes(value)) {
+                alert('同じ項目はすでに追加されています。');
+                symbolInput.select();
+                return;
+            }
+            toggleStatusItems.push(value);
+            statusDescriptions[value] = description;
+            saveToggleStatusItems();
+            saveStatusDescriptions();
+            symbolInput.value = '';
+            descriptionInput.value = '';
+            render();
+        }
+        function removeToggleStatus(value) {
+            toggleStatusItems = toggleStatusItems.filter(item => item !== value);
+            if (!isDefaultStatusItem(value)) delete statusDescriptions[value];
+            saveToggleStatusItems();
+            saveStatusDescriptions();
+            render();
+        }
+        function initSettingsPanelState() {
+            const panel = document.getElementById('settings-panel');
+            if (!panel) return;
+            const saved = localStorage.getItem('settingsPanelOpen');
+            panel.open = saved === 'true';
+            panel.addEventListener('toggle', function() {
+                localStorage.setItem('settingsPanelOpen', panel.open ? 'true' : 'false');
+            });
+        }
 
         // ========== 定休日チェック ==========
         document.querySelectorAll('.day-check').forEach(checkbox => {
@@ -369,7 +678,7 @@
                     if (cell.dataset.wday === this.value) {
                         const statusEl = cell.querySelector('.status');
                         const key = cell.dataset.key;
-                        const newVal = this.checked ? '休' : '◎';
+                        const newVal = this.checked ? '休' : '';
                         cell.dataset.status = newVal;
                         setStatusDisplay(statusEl, newVal, getHolidayIconData());
                         localStorage.setItem(key, newVal);
@@ -413,20 +722,28 @@
                 preview.removeAttribute('src');
             }
         }
-        function updateLegendHolidayItem(holidayIconData) {
-            const legendItem = document.getElementById('legend-holiday-item');
-            if (!legendItem) return;
-            legendItem.textContent = '';
-            if (holidayIconData) {
-                const img = document.createElement('img');
-                img.className = 'legend-icon';
-                img.src = holidayIconData;
-                img.alt = '休';
-                legendItem.appendChild(img);
-                legendItem.appendChild(document.createTextNode(':定休日'));
-            } else {
-                legendItem.textContent = '休:定休日';
-            }
+        function renderLegendFromToggleSettings(holidayIconData) {
+            const legendList = document.getElementById('legend-list');
+            if (!legendList) return;
+            legendList.innerHTML = '';
+
+            toggleStatusItems.forEach(symbol => {
+                if (!symbol) return;
+                const description = getStatusDescription(symbol);
+                const item = document.createElement('span');
+
+                if (symbol === '休' && holidayIconData) {
+                    const img = document.createElement('img');
+                    img.className = 'legend-icon';
+                    img.src = holidayIconData;
+                    img.alt = '休';
+                    item.appendChild(img);
+                    if (description) item.appendChild(document.createTextNode(`:${description}`));
+                } else {
+                    item.textContent = description ? `${symbol}:${description}` : symbol;
+                }
+                legendList.appendChild(item);
+            });
         }
         function handleHolidayIconUpload(input) {
             if (!(input.files && input.files[0])) return;
@@ -498,7 +815,8 @@
             else { logoImg.style.display = 'none'; }
             const holidayIconData = getHolidayIconData();
             updateHolidayIconPreview(holidayIconData);
-            updateLegendHolidayItem(holidayIconData);
+            renderLegendFromToggleSettings(holidayIconData);
+            renderToggleSettings();
 
             const days = ['日', '月', '火', '水', '木', '金', '土'];
             days.forEach((d, i) => {
@@ -537,7 +855,7 @@
 
             let savedValue = localStorage.getItem(storageKey);
             if (savedValue === null) {
-                savedValue = fixedHolidays.includes(wday) ? '休' : '◎';
+                savedValue = fixedHolidays.includes(wday) ? '休' : '';
                 localStorage.setItem(storageKey, savedValue);
             }
             cell.dataset.status = savedValue;
@@ -552,11 +870,12 @@
             cell.appendChild(statusEl);
 
             cell.onclick = function() {
-                const currentValue = this.dataset.status || localStorage.getItem(storageKey) || '◎';
-                let currentIdx = symbols.indexOf(currentValue);
-                if (currentIdx === -1) currentIdx = 0;
-                let nextIdx = (currentIdx + 1) % symbols.length;
-                const nextValue = symbols[nextIdx];
+                const currentValue = this.dataset.status || localStorage.getItem(storageKey) || '';
+                const statusCycle = getStatusCycle();
+                let currentIdx = statusCycle.indexOf(currentValue);
+                if (currentIdx === -1) currentIdx = -1;
+                const nextIdx = (currentIdx + 1) % statusCycle.length;
+                const nextValue = statusCycle[nextIdx];
                 this.dataset.status = nextValue;
                 setStatusDisplay(statusEl, nextValue, getHolidayIconData());
                 localStorage.setItem(storageKey, nextValue);
@@ -707,6 +1026,8 @@
                 savedComment: localStorage.getItem('savedComment') || '',
                 savedSnsText: localStorage.getItem('savedSnsText') || '',
                 fixedHolidays: JSON.parse(localStorage.getItem('fixedHolidays') || '[]'),
+                statusToggleItems: toggleStatusItems,
+                statusToggleDescriptions: statusDescriptions,
                 shopLogo: localStorage.getItem('shopLogo') || '',
                 holidayStatusIcon: localStorage.getItem('holidayStatusIcon') || '',
                 viewMode: localStorage.getItem('viewMode') || 'month',
@@ -730,6 +1051,20 @@
                 if (data.savedComment !== undefined) localStorage.setItem('savedComment', data.savedComment);
                 if (data.savedSnsText !== undefined) localStorage.setItem('savedSnsText', data.savedSnsText);
                 if (data.fixedHolidays) localStorage.setItem('fixedHolidays', JSON.stringify(data.fixedHolidays));
+                if (data.statusToggleItems !== undefined) {
+                    if (Array.isArray(data.statusToggleItems)) {
+                        localStorage.setItem('statusToggleItems', JSON.stringify(normalizeStatusItems(data.statusToggleItems)));
+                    } else {
+                        localStorage.removeItem('statusToggleItems');
+                    }
+                }
+                if (data.statusToggleDescriptions !== undefined) {
+                    if (data.statusToggleDescriptions && typeof data.statusToggleDescriptions === 'object' && !Array.isArray(data.statusToggleDescriptions)) {
+                        localStorage.setItem('statusToggleDescriptions', JSON.stringify(normalizeStatusDescriptions(data.statusToggleDescriptions)));
+                    } else {
+                        localStorage.removeItem('statusToggleDescriptions');
+                    }
+                }
                 if (data.shopLogo) localStorage.setItem('shopLogo', data.shopLogo);
                 if (data.holidayStatusIcon !== undefined) {
                     if (data.holidayStatusIcon) localStorage.setItem('holidayStatusIcon', data.holidayStatusIcon);
@@ -746,6 +1081,8 @@
                 currentStyle = localStorage.getItem('currentStyle') || 'cute';
                 currentColor = localStorage.getItem('currentColor') || '#2c3e50';
                 hasBorder = localStorage.getItem('hasBorder') !== 'false';
+                toggleStatusItems = loadToggleStatusItems();
+                statusDescriptions = loadStatusDescriptions();
                 document.getElementById('import-area').style.display = 'none';
                 document.getElementById('import-text').value = '';
                 render();
@@ -771,7 +1108,26 @@
         document.getElementById('custom-color').addEventListener('input', function() {
             changeColor(this.value);
         });
+        const newToggleStatusInput = document.getElementById('new-toggle-status');
+        if (newToggleStatusInput) {
+            newToggleStatusInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomToggleStatus();
+                }
+            });
+        }
+        const newToggleDescriptionInput = document.getElementById('new-toggle-description');
+        if (newToggleDescriptionInput) {
+            newToggleDescriptionInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomToggleStatus();
+                }
+            });
+        }
 
+        initSettingsPanelState();
         render();
         
         function removeLogo() {
